@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MINOU · 心动玩偶 — 3D 互动伴侣</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+SC:wght@300;500;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+    "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.4.2/lib/three-vrm.module.min.js",
+    "openai": "https://cdn.jsdelivr.net/npm/openai@4.28.0/+esm"
+  }
+}
+</script>
+</head>
+<body data-theme="dusk">
+
+<!-- 背景氛围层 -->
+<div class="bg-atmosphere">
+  <div class="bg-gradient"></div>
+  <div class="bg-vignette"></div>
+  <div class="bg-grain"></div>
+</div>
+
+<!-- 3D 画布 -->
+<canvas id="stage"></canvas>
+
+<!-- 自定义光标 -->
+<div class="cursor-dot" id="cursorDot"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- 音乐控制 -->
+  <div class="music-control" id="musicControl">
+    <button class="music-toggle" id="musicToggle" title="背景音乐开关">
+      <span class="music-icon music-icon--play">♫</span>
+    </button>
+    <audio id="bgMusic" src="assets/music.mp3" loop></audio>
+  </div>
+
+  <!-- 标题 -->
+<header class="masthead">
+  <h1 class="masthead__title">MINOU</h1>
+  <p class="masthead__sub">心动玩偶 · Interactive Companion</p>
+  <div class="masthead__rule"></div>
+</header>
+
+<!-- 左侧互动工具栏 -->
+<div class="user-bubble" id="userBubble"><span id="userText"></span></div>
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-panel__header">
+    <h2 class="chat-panel__title">情绪互动</h2>
+  </div>
+  <div class="chat-panel__body">
+    <div class="chip-row">
+      <button class="chip chip--action" data-action="pet">摸摸头</button>
+      <button class="chip chip--action" data-action="praise">夸夸它</button>
+      <button class="chip chip--action" data-action="sleep">哄它睡觉</button>
+    </div>
+    <div class="chat-input-wrapper">
+      <input type="text" class="chat-input" id="chatInput" placeholder="想对她说点什么..." autocomplete="off">
+      <button class="chat-send" id="chatSend">发送</button>
+    </div>
+  </div>
+</div>
+
+<!-- 气泡对话 -->
+<div class="speech-bubble" id="speechBubble"><span id="speechText"></span></div>
+
+<!-- 关节标记容器（姿势模式） -->
+<div id="jointMarkers"></div>
+
+<!-- 右侧控制面板 -->
+<aside class="panel" id="panel">
+  <div class="panel__drag-handle" id="panelDragHandle"></div>
+  <button class="panel__collapse" id="panelToggle" title="收起/展开面板">❮</button>
+  <nav class="panel__tabs">
+    <button class="tab is-active" data-tab="interact">互动</button>
+    <button class="tab" data-tab="pose">姿势</button>
+    <button class="tab" data-tab="expression">表情</button>
+    <button class="tab" data-tab="history">历史</button>
+    <button class="tab" data-tab="settings">设置</button>
+  </nav>
+
+  <!-- 互动 -->
+  <section class="tab-page is-active" data-page="interact">
+    <h2 class="panel__heading">与她互动</h2>
+    <div class="status-code" id="statusText">STATUS: IDLE</div>
+    <p class="panel__note">移动鼠标，她的视线会追随你；<br>左键轻点她的身体，会有不同反应。</p>
+    <h3 class="panel__label">心情</h3>
+    <div class="chip-row" id="moodRow">
+      <button class="chip" data-mood="idle">平静</button>
+      <button class="chip" data-mood="happy">开心</button>
+      <button class="chip" data-mood="relaxed">惬意</button>
+      <button class="chip" data-mood="surprised">赛博</button>
+      <button class="chip" data-mood="sad">忧郁</button>
+      <button class="chip" data-mood="angry">火热</button>
+      <button class="chip" data-mood="ocean">深海</button>
+      <button class="chip" data-mood="shocked">虚空</button>
+      <button class="chip" data-mood="shy">害羞</button>
+      <button class="chip" data-mood="sleepy">犯困</button>
+    </div>
+    <h3 class="panel__label">感知开关</h3>
+    <label class="switch-row"><span>视线跟随鼠标</span><input type="checkbox" id="optGaze" checked><i></i></label>
+    <label class="switch-row"><span>自动眨眼</span><input type="checkbox" id="optBlink" checked><i></i></label>
+    <label class="switch-row"><span>呼吸与微动</span><input type="checkbox" id="optBreath" checked><i></i></label>
+  </section>
+
+  <!-- 姿势 -->
+  <section class="tab-page" data-page="pose">
+    <h2 class="panel__heading">姿势工坊</h2>
+    <label class="switch-row switch-row--accent"><span>姿势模式（显示关节点）</span><input type="checkbox" id="optPoseMode"><i></i></label>
+    <p class="panel__note">姿势模式下：拖动发光关节点旋转关节，<br>按住 <kbd>Shift</kbd> 拖动可扭转。</p>
+    <h3 class="panel__label">预设姿势</h3>
+    <div class="chip-row">
+      <button class="chip" data-preset="natural">自然站立</button>
+      <button class="chip" data-preset="greet">挥手致意</button>
+      <button class="chip" data-preset="demure">乖巧</button>
+      <button class="chip" data-preset="tpose">标准 T-Pose</button>
+    </div>
+    <div class="chip-row">
+      <button class="chip chip--ghost" id="btnResetPose">↺ 重置全部关节</button>
+    </div>
+    <h3 class="panel__label">关节微调</h3>
+    <div id="jointSliders"></div>
+  </section>
+
+  <!-- 表情 -->
+  <section class="tab-page" data-page="expression">
+    <h2 class="panel__heading">表情调音台</h2>
+    <p class="panel__note">直接拉动滑杆，混合出独一无二的表情。</p>
+    <div id="expressionSliders"></div>
+    <div class="chip-row">
+      <button class="chip chip--ghost" id="btnResetExpr">↺ 重置表情</button>
+    </div>
+  </section>
+
+  <!-- 历史 -->
+  <section class="tab-page" data-page="history">
+    <h2 class="panel__heading">互动日志</h2>
+    <div id="chatHistoryList" class="history-list"></div>
+  </section>
+
+  <!-- 设置 -->
+  <section class="tab-page" data-page="settings">
+    <h2 class="panel__heading">场景设置</h2>
+    <h3 class="panel__label">氛围主题</h3>
+    <div class="chip-row">
+      <button class="chip" data-theme-btn="dusk">暮夜玫瑰</button>
+      <button class="chip" data-theme-btn="midnight">午夜蓝调</button>
+      <button class="chip" data-theme-btn="dawn">晨光暖橘</button>
+      <button class="chip" data-theme-btn="cyber">赛博脉冲</button>
+    </div>
+    <label class="switch-row"><span>缓慢环绕镜头</span><input type="checkbox" id="optOrbit"><i></i></label>
+  </section>
+</aside>
+
+<!-- 底部提示 -->
+<footer class="hint-bar">
+  <span>左键 · 触摸互动</span><i></i><span>右键拖动 · 旋转视角</span><i></i><span>滚轮 · 远近</span>
+</footer>
+
+<!-- 加载遮罩 -->
+<div class="loader" id="loader">
+  <div class="loader__heart"></div>
+  <div class="loader__title">MINOU</div>
+  <div class="loader__bar"><div class="loader__fill" id="loaderFill"></div></div>
+  <div class="loader__text" id="loaderText">正在唤醒她…</div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

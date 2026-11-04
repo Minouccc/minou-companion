@@ -1,0 +1,5 @@
+assets/*.vrm
+assets/*.glb
+.env
+.DS_Store
+node_modules/
