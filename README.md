@@ -2,9 +2,9 @@
 
 纯网页版 3D 互动伴侣 —— 集成 LLM 智能对话、3D 实时渲染、全身姿势调节与表情混缩。零构建、零后端，浏览器打开即用。
 
-**🎮 在线试玩（无需安装，点开即玩）：[https://your-deploy-url.com](https://your-deploy-url.com)**
+**🎮 在线试玩（无需安装，点开即玩）：[http://blog.minouccc.online/minou/index.html](http://blog.minouccc.online/minou/index.html)**
 
-[![Live Demo](https://img.shields.io/badge/🎮_在线试玩-Live_Demo-e8527a?style=for-the-badge)](https://your-deploy-url.com)
+[![Live Demo](https://img.shields.io/badge/🎮_在线试玩-Live_Demo-e8527a?style=for-the-badge)](http://blog.minouccc.online/minou/index.html)
 
 ![tech](https://img.shields.io/badge/Three.js-0.170-e8a0b4) ![tech](https://img.shields.io/badge/three--vrm-3.x-d8b78a) ![tech](https://img.shields.io/badge/LLM-DashScope-9fb8e8)
 
